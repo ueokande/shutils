@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [ $# = 1 ]; then
+  file=$1
+elif ! [ -t 0 ]; then
+  file="/dev/stdin"
+else
+  echo >&2 "bad argument"
+  exit 1
+fi
+
+IFS='' 
+printf '\e[s'
+while read line; do
+  printf '\e[u'
+  printf '\e[K'
+  echo "$line"
+done < "$file"

@@ -1,0 +1,16 @@
+#!/bin/sh
+
+if [ $# = 1 ]; then
+  file=$1
+elif ! [ -t 0 ]; then
+  file="/dev/stdin"
+else
+  echo >&2 "bad argument"
+  exit 1
+fi
+
+IFS='' 
+while read line; do
+  echo "$line"
+  sleep 1
+done < "$file"
