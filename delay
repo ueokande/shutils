@@ -1,16 +1,61 @@
-#!/bin/sh
+#!/bin/sh -e
 
-if [ $# = 1 ]; then
-  file=$1
-elif ! [ -t 0 ]; then
-  file="/dev/stdin"
-else
-  echo >&2 "bad argument"
-  exit 1
+help() {
+  echo >&2 "usage: delay [OPTION]... [FILE]..."
+  echo >&2 "Concatenate and prints line by line with delay to standard output."
+  echo >&2 ""
+  echo >&2 "With no FILE, or when FILE is -, read standard input."
+  echo >&2 ""
+  echo >&2 "  -h, --help            display this help text and exit"
+  echo >&2 "  -s, --sleep=SECONDS   delay time in seconds"
+  echo >&2 "  -u, --usleep=SECONDS  delay time in microsecond seconds"
+}
+
+run() {
+  IFS=''
+  while read line; do
+    sleep "$1"
+    echo "$line"
+  done < "$2"
+}
+
+targets=""
+sleep="1"
+
+while test $# != 0; do
+  case "$1" in
+  -)
+    targets="$targets $1"
+    ;;
+  -h|--help)
+    help
+    exit 0
+    ;;
+  -s|--sleep)
+    shift
+    sleep="$1"
+    ;;
+  --sleep=*)
+    sleep=$(printf -- "$1" | sed 's/^--sleep=//')
+    ;;
+  -*|--*)
+    echo >&2 "$0: unrecognized option '$1'"
+    exit 1
+    ;;
+  *)
+    targets="$targets $1"
+    ;;
+  esac
+  shift
+done
+
+if [ -z "$targets" ]; then
+  targets="-"
 fi
 
-IFS='' 
-while read line; do
-  echo "$line"
-  sleep 1
-done < "$file"
+for file in $targets; do
+  if [ "$file" = "-" ]; then
+    file="/dev/stdin"
+  fi
+  run "$sleep" "$file"
+done
