@@ -1,18 +1,52 @@
 #!/bin/bash
 
-if [ $# = 1 ]; then
-  file=$1
-elif ! [ -t 0 ]; then
-  file="/dev/stdin"
-else
-  echo >&2 "bad argument"
-  exit 1
+help() {
+  echo >&2 "usage: squash [OPTION]... [FILE]..."
+  echo >&2 "Concatenate and squash FILE(s) to standard output."
+  echo >&2 ""
+  echo >&2 "With no FILE, or when FILE is -, read standard input."
+  echo >&2 ""
+  echo >&2 "  -h, --help    display this help text and exit"
+}
+
+run() {
+  IFS=''
+  printf '\e[s'
+  while read line; do
+    printf '\e[u\e[K'
+    echo "$line"
+  done < "$1"
+}
+
+targets=""
+
+while test $# != 0; do
+  case "$1" in
+  -)
+    targets="$targets $1"
+    ;;
+  -h|--help)
+    help
+    exit 0
+    ;;
+  -*|--*)
+    echo >&2 "$0: unrecognized option '$1'"
+    exit 1
+    ;;
+  *)
+    targets="$targets $1"
+    ;;
+  esac
+  shift
+done
+
+if [ -z "$targets" ]; then
+  targets="-"
 fi
 
-IFS='' 
-printf '\e[s'
-while read line; do
-  printf '\e[u'
-  printf '\e[K'
-  echo "$line"
-done < "$file"
+for file in $targets; do
+  if [ "$file" = "-" ]; then
+    file="/dev/stdin"
+  fi
+  run "$file"
+done
